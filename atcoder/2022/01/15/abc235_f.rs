@@ -161,16 +161,18 @@ pub fn solve<R: BufRead, W: Write, F: FnMut() -> R>(mut reader: Reader<F>, mut w
     for ci in 0..m {
         cmap[c[ci]] = Some(ci);
     }
-    // dp[i][is_zero][smaller][bits] = ; (flag == 0: nと同じ, flag == 1: nより小さい)
-    let mut dp = vec![vec![vec![mi(0); 1 << m]; 2]; n.len() + 1];
-    let mut sum = vec![vec![vec![mi(0); 1 << m]; 2]; n.len() + 1];
+    // dp[smaller][bits] = patterns;
+    let mut dp = vec![vec![mi(0); 1 << m]; 2];
+    let mut sum = vec![vec![mi(0); 1 << m]; 2];
     let mut tenpow = mi(10).pow(n.len() as i64 - 1);
     // for文使ってループする
     for i in 0..n.len() {
+        let mut sum_next = vec![vec![mi(0); 1 << m]; 2];
+        let mut dp_next = vec![vec![mi(0); 1 << m]; 2];
         let d = n[i] as usize;
 
         {
-            // zero
+            // leading-zero
             let smaller = if i == 0 { 0 } else { 1 };
             for next in 1..10 {
                 if smaller == 0 && next > d {
@@ -178,8 +180,8 @@ pub fn solve<R: BufRead, W: Write, F: FnMut() -> R>(mut reader: Reader<F>, mut w
                 }
                 let next_bits = if let Some(b) = cmap[next] { 1 << b } else { 0 };
                 let next_smaller = if next < d { 1 } else { smaller };
-                dp[i + 1][next_smaller][next_bits] += 1;
-                sum[i + 1][next_smaller][next_bits] += tenpow * next as i64;
+                dp_next[next_smaller][next_bits] += 1;
+                sum_next[next_smaller][next_bits] += tenpow * next as i64;
             }
         }
         for smaller in 0..2 {
@@ -194,17 +196,17 @@ pub fn solve<R: BufRead, W: Write, F: FnMut() -> R>(mut reader: Reader<F>, mut w
                         bits
                     };
                     let next_smaller = if next < d { 1 } else { smaller };
-                    let p = dp[i][smaller][bits];
-                    dp[i + 1][next_smaller][next_bits] += p;
-                    let s = sum[i][smaller][bits];
-                    sum[i + 1][next_smaller][next_bits] += s + p * tenpow * next as i64;
+                    dp_next[next_smaller][next_bits] += dp[smaller][bits];
+                    sum_next[next_smaller][next_bits] +=
+                        sum[smaller][bits] + dp[smaller][bits] * tenpow * next as i64;
                 }
             }
         }
         tenpow /= 10;
+        dp = dp_next;
+        sum = sum_next;
     }
-    // dbg!(&dp);
-    writer.ln(sum[n.len()][0][(1 << m) - 1] + sum[n.len()][1][(1 << m) - 1]);
+    writer.ln(sum[0][(1 << m) - 1] + sum[1][(1 << m) - 1]);
 }
 
 pub type Mi = ModInt<Mod998244353>;
