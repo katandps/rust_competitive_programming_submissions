@@ -452,17 +452,23 @@ pub fn solve<R: BufRead, W: Write, F: FnMut() -> R>(mut reader: Reader<F>, mut w
     let mut bit = BinaryIndexedTree::<Addition<Mi>>::from(LIMIT);
     let mut bit_sum = BinaryIndexedTree::<Addition<Mi>>::from(LIMIT);
     let mut sum = Mi::zero();
+    let mut inv = vec![Mi::one(); n + 1];
+    inv[0] = Mi::zero();
+    for i in 2..=n {
+        inv[i] = Mi::zero()
+            - inv[(Mod998_244_353::MOD as usize % i)] * (Mod998_244_353::MOD as usize / i) as i64;
+    }
     for k in 1..=n {
         let p = a[k - 1];
         sum += (bit.fold(0..=p as usize) * 2 + 1) * p;
         sum += bit_sum.fold(p as usize + 1..LIMIT) * 2;
-        dbg!(
-            bit.fold(0..=p as usize),
-            bit_sum.fold(p as usize + 1..LIMIT)
-        );
+        // dbg!(
+        //     bit.fold(0..=p as usize),
+        //     bit_sum.fold(p as usize + 1..LIMIT)
+        // );
         bit.add(p as usize, mi(1));
         bit_sum.add(p as usize, mi(p as u32));
-        writer.ln(sum / k as i64 / k as i64);
-        dbg!(k, sum);
+        writer.ln(sum * inv[k] * inv[k]);
+        // dbg!(k, sum);
     }
 }
